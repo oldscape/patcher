@@ -1,0 +1,77 @@
+[[tc]]
+name = "g1"
+method = { name = "b", desc = "(Z)I", dummyIdx = 0, dummyValue = true }
+variants = [
+    { name = "a", desc = "(I)I" },
+    { name = "f", desc = "(Z)I" },
+    { name = "h", desc = "(Z)I" },
+    { name = "a", desc = "(I)I" }
+]
+
+[[tc]]
+name = "p1"
+method = { name = "b", desc = "(II)V", dummyIdx = 0, dummyValue = 0 }
+variants = [
+    { name = "a", desc = "(IZ)V", dummyIdx = 1 },
+    { name = "g", desc = "(II)V", dummyIdx = 1 },
+    { name = "a", desc = "(ZI)V", dummyIdx = 0 }
+]
+
+[[tc]]
+name = "g1b"
+method = { name = "d", desc = "(Z)I", dummyIdx = 0, dummyValue = true }
+variants = [
+    { name = "e", desc = "(Z)B" },
+    { name = "h", desc = "(I)B" }
+]
+
+[[tc]]
+name = "g2"
+method = { name = "l", desc = "(I)I", dummyIdx = 0, dummyValue = -1 }
+variants = [
+    { name = "c", desc = "(I)I" },
+    { name = "g", desc = "(B)I" },
+    { name = "g", desc = "(I)I" }
+]
+
+[[tc]]
+name = "p2"
+method = { name = "b", desc = "(BI)V", dummyIdx = 0, dummyValue = 91 }
+variants = [
+    { name = "c", desc = "(II)V", dummyIdx = 1 },
+    { name = "a", desc = "(IB)V", dummyIdx = 1 },
+    { name = "e", desc = "(II)V", dummyIdx = 0 }
+]
+
+[[tc]]
+name = "g2b"
+method = { name = "d", desc = "(B)I", dummyIdx = 0, dummyValue = -25 }
+variants = [
+    { name = "a", desc = "(Z)I" },
+    { name = "e", desc = "(I)I" }
+]
+
+[[tc]]
+name = "g3"
+method = { name = "f", desc = "(I)I", dummyIdx = 0, dummyValue = 16711680 }
+variants = [
+    { name = "i", desc = "(B)I" }
+]
+
+[[tc]]
+name = "g4"
+method = { name = "l", desc = "(I)I", dummyIdx = 0, dummyValue = -708753192 }
+variants = [
+    { name = "c", desc = "(B)I" },
+    { name = "e", desc = "(B)I" },
+    { name = "c", desc = "(Z)I" }
+]
+
+[[tc]]
+name = "p4"
+method = { name = "c", desc = "(BI)V", dummyIdx = 0, dummyValue = -66 }
+variants = [
+    { name = "d", desc = "(II)V", dummyIdx = 0 },
+    { name = "a", desc = "(II)V", dummyIdx = 0 },
+    { name = "a", desc = "(BI)V", dummyIdx = 0 }
+]
