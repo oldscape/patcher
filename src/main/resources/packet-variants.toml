@@ -60,7 +60,7 @@ variants = [
 
 [[tc]]
 name = "g4"
-method = { name = "l", desc = "(I)I", dummyIdx = 0, dummyValue = -708753192 }
+method = { name = "b", desc = "(I)I", dummyIdx = 0, dummyValue = -708753192 }
 variants = [
     { name = "c", desc = "(B)I" },
     { name = "e", desc = "(B)I" },
