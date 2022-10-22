@@ -10,11 +10,18 @@ import net.oldscape.patcher.transformer.PacketVariantMapper;
 import net.oldscape.patcher.transformer.PacketVariantMapper.MethodVariants;
 import net.oldscape.patcher.transformer.RSAPubKeyReplacer;
 import net.oldscape.patcher.transformer.RSAPubKeyReplacer.RSAKeyFields;
+import net.oldscape.patcher.transformer.RemoveUnusedMath;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.commons.ClassRemapper;
 import org.objectweb.asm.commons.SimpleRemapper;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.analysis.Analyzer;
+import org.objectweb.asm.tree.analysis.AnalyzerException;
+import org.objectweb.asm.tree.analysis.BasicInterpreter;
+import org.objectweb.asm.tree.analysis.BasicValue;
+import org.objectweb.asm.tree.analysis.BasicVerifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,6 +60,7 @@ public class Patcher {
         var transformers = List.of(
                 new BitShiftTransformer(),
                 new Jdk9MouseFixer(),
+                new RemoveUnusedMath(),
                 RSAPubKeyReplacer.create(publicKeySpec, loadRsaKeyFields()),
                 PacketVariantMapper.create(loadPacketVariants())
         );
@@ -75,6 +83,14 @@ public class Patcher {
 
         try (var output = new JarOutputStream(Files.newOutputStream(target, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING))) {
             for (var node : classNodes) {
+                var analyzer = new Analyzer<>(new BasicVerifier());
+                try {
+                    for (var methodNode : node.methods) {
+                        analyzer.analyze(node.name, methodNode);
+                    }
+                } catch (AnalyzerException e) {
+                    throw new RuntimeException(e.getMessage());
+                }
 
                 var writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
                 var remapper = new SimpleRemapper(mappings);
