@@ -46,40 +46,67 @@ public class PacketVariantMapper implements Transformer {
 
             for (var methodVariant : methodVariants) {
                 methodVariant.variants()
-                             .forEach(methodNode -> mapVariantTo(classNode, methodNode, methodVariant.method));
+                             .forEach(methodInfo -> mapVariantTo(classNode, methodInfo, methodVariant.method));
             }
         }
     }
 
     private void mapVariantTo(ClassNode owner, MethodInfo variant, MethodInfo original) {
+        var originalMethod = findMethod(owner, original);
+
+        if (originalMethod == null) {
+            LOGGER.warn("Couldn't find original method {}.{}{}", owner.name, original.name, original.desc);
+            return;
+        }
         var argumentTypes = Type.getArgumentTypes(original.desc);
         var variantArgumentTypes = Type.getArgumentTypes(variant.desc);
         var returnType = Type.getReturnType(original.desc);
 
-        if (argumentTypes.length > 2) {
-            LOGGER.warn("Variant mapping failed as variant {}{} has more than 1 argument", variant.name, variant.desc);
+        var argMapping = variant.argMapping;
+        if (argumentTypes.length > 2 && argMapping == null) {
+            LOGGER.warn("Variant mapping failed as variant {}{} has more than 1 argument and no arg mapping was provided", variant.name, variant.desc);
             return;
         }
         var insns = new InsnList();
         insns.add(new VarInsnNode(Opcodes.ALOAD, 0));
 
-        var variantArgIdx = 0;
-        for (int argIdx = 0; argIdx < argumentTypes.length; argIdx++) {
-            if (original.dummyIdx == argIdx) {
-                insertDummy(insns, original.dummyValue);
-            } else {
-                if (variantArgIdx == variant.dummyIdx) {
+        if (argMapping == null) {
+            // can only deduce parameter order when we have two args methods
+            var variantArgIdx = 0;
+            for (int argIdx = 0; argIdx < argumentTypes.length; argIdx++) {
+                if (original.dummyIdx == argIdx) {
+                    insertDummy(insns, original.dummyValue);
+                } else {
+                    // skip the variant dummy parameter, if any
+                    if (variantArgIdx == variant.dummyIdx) {
+                        variantArgIdx++;
+                    }
+                    var opcode = variantArgumentTypes[variantArgIdx].getOpcode(Opcodes.ILOAD);
+                    insns.add(new VarInsnNode(opcode, variantArgIdx + 1)); // + 1 as 0 is 'this'
                     variantArgIdx++;
                 }
-                var opcode = variantArgumentTypes[variantArgIdx].getOpcode(Opcodes.ILOAD);
-                insns.add(new VarInsnNode(opcode, variantArgIdx + 1)); // + 1 as 0 is 'this'
-                variantArgIdx++;
+            }
+        } else {
+            for (int argIdx = 0; argIdx < argumentTypes.length; argIdx++) {
+                if (original.dummyIdx == argIdx) {
+                    insertDummy(insns, original.dummyValue);
+                } else {
+                    // skip the variant dummy parameter, if any
+                    var variantArgIdx = argMapping[argIdx];
+                    var opcode = variantArgumentTypes[variantArgIdx].getOpcode(Opcodes.ILOAD);
+                    insns.add(new VarInsnNode(opcode, variantArgIdx + 1)); // + 1 as 0 is 'this'
+                }
             }
         }
         insns.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, owner.name, original.name, original.desc));
         insns.add(new InsnNode(returnType.getOpcode(Opcodes.IRETURN)));
 
         var variantMethod = findMethod(owner, variant);
+
+        if (variantMethod == null) {
+            LOGGER.warn("Couldn't find variant method {}.{}{}", owner.name, variant.name, variant.desc);
+            return;
+        }
         variantMethod.instructions = insns;
         variantMethod.tryCatchBlocks.clear();
     }
@@ -112,7 +139,7 @@ public class PacketVariantMapper implements Transformer {
 
     }
 
-    public record MethodInfo(String name, String desc, int dummyIdx, Object dummyValue) {
+    public record MethodInfo(String name, String desc, int dummyIdx, Object dummyValue, int[] argMapping) {
 
     }
 }

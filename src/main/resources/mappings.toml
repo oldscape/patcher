@@ -4,7 +4,7 @@
 "tc.J" = "data"
 "tc.b(Z)I" = "g1"
 "tc.b(II)V" = "p1"
-"tc.d(Z)I" = "g1b"
+"tc.d(Z)B" = "g1b"
 "tc.l(I)I" = "g2"
 "tc.b(BI)V" = "p2"
 "tc.d(B)I" = "g2b"
@@ -30,3 +30,14 @@
 # RSA key
 "fb.i" = "modulus"
 "r.b" = "exponent"
+
+# Js5
+"he.a([IBI)Z" = "unpack"
+
+# Player
+"me" = "Player"
+"me.a(Ltc;Z)V" = "decodeAppearance"
+
+# Misc
+
+"ha.a(IIILme;)V" = "decodePlayerExtendedInfo"

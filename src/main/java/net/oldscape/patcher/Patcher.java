@@ -10,22 +10,23 @@ import net.oldscape.patcher.transformer.PacketVariantMapper;
 import net.oldscape.patcher.transformer.PacketVariantMapper.MethodVariants;
 import net.oldscape.patcher.transformer.RSAPubKeyReplacer;
 import net.oldscape.patcher.transformer.RSAPubKeyReplacer.RSAKeyFields;
+import net.oldscape.patcher.transformer.RemoveImpossibleJumps;
 import net.oldscape.patcher.transformer.RemoveUnusedMath;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.commons.ClassRemapper;
 import org.objectweb.asm.commons.SimpleRemapper;
 import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.analysis.Analyzer;
 import org.objectweb.asm.tree.analysis.AnalyzerException;
-import org.objectweb.asm.tree.analysis.BasicInterpreter;
-import org.objectweb.asm.tree.analysis.BasicValue;
 import org.objectweb.asm.tree.analysis.BasicVerifier;
+import org.objectweb.asm.util.Textifier;
+import org.objectweb.asm.util.TraceMethodVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -55,12 +56,14 @@ public class Patcher {
     }
 
     public static Patcher create(Path srcJar, Path outJar) throws IOException {
-        var publicKeySpec = generateRsaKey();
+        var publicKeySpec = loadOrGenRsaPubKey();
 
         var transformers = List.of(
                 new BitShiftTransformer(),
                 new Jdk9MouseFixer(),
                 new RemoveUnusedMath(),
+                new RemoveImpossibleJumps(),
+                // new NopUnpackExceptions(),
                 RSAPubKeyReplacer.create(publicKeySpec, loadRsaKeyFields()),
                 PacketVariantMapper.create(loadPacketVariants())
         );
@@ -84,12 +87,19 @@ public class Patcher {
         try (var output = new JarOutputStream(Files.newOutputStream(target, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING))) {
             for (var node : classNodes) {
                 var analyzer = new Analyzer<>(new BasicVerifier());
-                try {
-                    for (var methodNode : node.methods) {
+                for (var methodNode : node.methods) {
+                    try {
                         analyzer.analyze(node.name, methodNode);
+                    } catch (AnalyzerException e) {
+                        var textifier = new Textifier();
+                        var methodVisitor = new TraceMethodVisitor(textifier);
+                        methodNode.accept(methodVisitor);
+
+                        try (var printWriter = new PrintWriter(System.out)) {
+                            textifier.print(printWriter);
+                        }
+                        throw new IllegalStateException("Bytecode correctness failed: " + e.getMessage() + " at " + node.name + "." + methodNode.name + methodNode.desc);
                     }
-                } catch (AnalyzerException e) {
-                    throw new RuntimeException(e.getMessage());
                 }
 
                 var writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);

@@ -9,6 +9,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.RSAPrivateCrtKeySpec;
 import java.security.spec.RSAPrivateKeySpec;
 import java.security.spec.RSAPublicKeySpec;
@@ -94,7 +95,7 @@ public record RSAKeyFactory(KeyFactory factory, KeyPairGenerator generator) {
     public RSAPrivateKeySpec privateKeySpecFrom(InputStream inputStream) {
         try {
             byte[] bytes = inputStream.readAllBytes();
-            var encodedKeySpec = new X509EncodedKeySpec(bytes);
+            var encodedKeySpec = new PKCS8EncodedKeySpec(bytes);
 
             var privateKey = factory.generatePrivate(encodedKeySpec);
 

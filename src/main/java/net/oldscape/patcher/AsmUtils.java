@@ -26,6 +26,10 @@ public final class AsmUtils {
         return findFirstMethodMatching(classNode, methodNode -> signatureMatches(methodNode, returnType, argTypes));
     }
 
+    public static MethodNode findMethod(ClassNode classNode, String name, Type returnType, Type... argTypes) {
+        return findFirstMethodMatching(classNode, methodNode -> methodNode.name.equals(name) && signatureMatches(methodNode, returnType, argTypes));
+    }
+
     public static MethodNode findMethod(ClassNode classNode, MethodInfo methodInfo) {
         return findFirstMethodMatching(classNode, methodNode -> methodNode.name.equals(methodInfo.name()) && methodNode.desc.equals(methodInfo.desc()));
     }

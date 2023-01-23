@@ -19,7 +19,7 @@ variants = [
 
 [[tc]]
 name = "g1b"
-method = { name = "d", desc = "(Z)I", dummyIdx = 0, dummyValue = true }
+method = { name = "d", desc = "(Z)B", dummyIdx = 0, dummyValue = true }
 variants = [
     { name = "e", desc = "(Z)B" },
     { name = "h", desc = "(I)B" }
@@ -74,4 +74,11 @@ variants = [
     { name = "d", desc = "(II)V", dummyIdx = 0 },
     { name = "a", desc = "(II)V", dummyIdx = 0 },
     { name = "a", desc = "(BI)V", dummyIdx = 0 }
+]
+
+[[tc]]
+name = "gdata"
+method = { name = "a", desc = "(III[B)V", dummyIdx = 0, dummyValue = 14362 }
+variants = [
+    { name = "a", desc = "([BIZI)V", dummyIdx = 2, argMapping = [-1, 3, 1, 0] }
 ]
