@@ -4,12 +4,13 @@
 - Removes dummy math expressions and impossible conditional jumps;
 - Removes the `Packet` class methods variants;
 
-### RSA keys
+#### Expected client hash:
+```
+sha256 70b7e2a18529489d72d04ad04a4e9cc0baee2e6463941102f1b0a60aa8d22e3c
+```
 
-If you have an RSA private key (PCKS8 format) you can place it in the project root directory and name it `login-key.key`, 
-
-Example of usage:
+Example usage:
 
 ```
-net.oldscape.patcher.Bootstrap --src 414/client.jar --out 414/patched-client.jar
+net.oldscape.patcher.Bootstrap --src client.jar --out patched-client.jar
 ```

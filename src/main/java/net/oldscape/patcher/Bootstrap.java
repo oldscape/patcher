@@ -8,9 +8,9 @@ import java.nio.file.Path;
 
 public class Bootstrap {
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, InterruptedException {
         var options = parseOptions(args);
-        var patcher = Patcher.create(options.srcJar(), options.outJar());
+        var patcher = Patcher.create(options);
         patcher.process();
     }
 
@@ -28,10 +28,14 @@ public class Bootstrap {
                               .describedAs("The output jar")
                               .required()
                               .withValuesConvertedBy(pathConverter);
+        var rsaKeyUrl = parser.accepts("rsa-key")
+                              .withRequiredArg()
+                              .describedAs("The URL to download the rsa key from");
         var options = parser.parse(args);
         return new PatcherOptions(
                 options.valueOf(srcDirArg),
-                options.valueOf(outDirArg)
+                options.valueOf(outDirArg),
+                options.valueOf(rsaKeyUrl)
         );
     }
 

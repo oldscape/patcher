@@ -27,6 +27,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -55,19 +59,23 @@ public class Patcher {
         this.outJar = outJar;
     }
 
-    public static Patcher create(Path srcJar, Path outJar) throws IOException {
-        var publicKeySpec = loadOrGenRsaPubKey();
+    public static Patcher create(PatcherOptions options) throws IOException, InterruptedException {
+        RSAPublicKeySpec publicKeySpec;
 
+        if (options.loginKeyUrl() == null) {
+            publicKeySpec = loadOrGenRsaPubKey();
+        } else {
+            publicKeySpec = loadRsaPubKey(options.loginKeyUrl());
+        }
         var transformers = List.of(
                 new BitShiftTransformer(),
                 new Jdk9MouseFixer(),
                 new RemoveUnusedMath(),
                 new RemoveImpossibleJumps(),
-                // new NopUnpackExceptions(),
                 RSAPubKeyReplacer.create(publicKeySpec, loadRsaKeyFields()),
                 PacketVariantMapper.create(loadPacketVariants())
         );
-        return new Patcher(transformers, srcJar, outJar);
+        return new Patcher(transformers, options.srcJar(), options.outJar());
     }
 
     public void process() throws IOException {
@@ -141,8 +149,24 @@ public class Patcher {
         return classNodes;
     }
 
+    private static RSAPublicKeySpec loadRsaPubKey(String url) throws IOException, InterruptedException {
+        var httpClient = HttpClient.newHttpClient();
+        var request = HttpRequest.newBuilder(URI.create(url))
+                                 .GET()
+                                 .build();
+        var response = httpClient.send(request, BodyHandlers.ofInputStream());
+
+        if (response.statusCode() != 200) {
+            throw new IOException("Http response code: " + response.statusCode());
+        }
+
+        try (var body = response.body()) {
+            return RSAKeyFactory.create().publicKeySpecFrom(body);
+        }
+    }
+
     private static RSAPublicKeySpec loadOrGenRsaPubKey() throws IOException {
-        var key = Path.of("login-key.key");
+        var key = Path.of("login-private-key.der");
         var keyFactory = RSAKeyFactory.create();
 
         if (Files.exists(key)) {
@@ -166,20 +190,23 @@ public class Patcher {
         var privateKey = keyFactory.privateKeySpecFrom(keyPair.getPrivate());
         printKeyPairInfo(privateKey, publicKey);
 
-        try (var stream = Files.newOutputStream(Path.of("login-key.key"), StandardOpenOption.CREATE)) {
+        try (var stream = Files.newOutputStream(Path.of("login-private-key.der"), StandardOpenOption.CREATE)) {
             stream.write(keyPair.getPrivate().getEncoded());
         }
         return publicKey;
     }
 
     private static void printKeyPairInfo(RSAPrivateKeySpec privateKey, RSAPublicKeySpec publicKey) {
-        LOGGER.info("===== RSA Key Pair Info =====");
-        LOGGER.info("----- Public key -----");
-        LOGGER.info("exponent={}", publicKey.getPublicExponent());
-        LOGGER.info("modulus={}", publicKey.getModulus());
-        LOGGER.info("----- Private key -----");
-        LOGGER.info("exponent={}", privateKey.getPrivateExponent());
-        LOGGER.info("modulus={}", privateKey.getModulus());
+        var info = """
+                ===== RSA Key Pair Info =====
+                ----- Public key -----
+                exponent=%s
+                modulus=%s
+                ----- Private key -----
+                exponent=%s
+                modulus=%s
+                """.formatted(publicKey.getPublicExponent(), publicKey.getModulus(), privateKey.getPrivateExponent(), privateKey.getModulus());
+        LOGGER.info(info);
     }
 
     private static RSAKeyFields loadRsaKeyFields() throws IOException {
